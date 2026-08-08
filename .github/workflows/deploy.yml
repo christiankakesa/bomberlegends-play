@@ -1,0 +1,43 @@
+---
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Run deploy script on VPS for main commits
+        if: github.ref == 'refs/heads/main'
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          username: ${{ secrets.VPS_USER }}
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            sudo -u ${{ secrets.VPS_USER }} bash /srv/apps/bomberlegendsdev-play-app/deploy.sh
+
+      - name: Run deploy script on VPS for release commits
+        if: startsWith(github.ref, 'refs/heads/release/')
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          username: ${{ secrets.VPS_USER }}
+          host: ${{ secrets.VPS_HOST }}
+          port: ${{ secrets.VPS_SSH_PORT }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            BRANCH_NAME="${{ github.ref_name }}"
+            sudo -u ${{ secrets.VPS_USER }} bash /srv/apps/bomberlegendsprod-play-app/deploy.sh "$BRANCH_NAME"
